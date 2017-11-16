@@ -12,6 +12,7 @@ int main(int argc, char **argv) {
 
     if (argc < 2) {
         printf("No options specified: exitting\n");
+        exit(1);
     }
 
     for (i=0; i<argc; i++) {

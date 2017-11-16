@@ -8,6 +8,11 @@ typedef struct AstExp {
         /*ast_string, */
         ast_return,
         ast_call,
+        ast_block,
+        ast_unary_op,
+        ast_binary_op,
+        ast_declaration,
+        ast_assignment,
         ast_function,
     } tag;
     union {

@@ -4,29 +4,12 @@
 #include <string.h>
 
 #include "errors.h"
+#include "token.h"
 
-typedef struct Token {
-    enum {
-        token_integer,
-        token_string,
-        token_name,
-    } type;
-    union {
-        int integer;
-        char *string;
-        char *name;
-    } value;
-
-    char *filename;
-    int line_number;
-    int line_index;
-} Token;
-
-Token *make_integer_token(char *st, char *filename, int line, int line_index) {
+int make_integer_token(Token *t, char *st, char *filename, int line, int line_index) {
     int base = 10;
     int index = 0;
     int value = 0;
-    Token *result;
 
     if (st[0] == '0') {
         switch (st[1]) {
@@ -58,6 +41,7 @@ Token *make_integer_token(char *st, char *filename, int line, int line_index) {
             if (st[3] != '\'') {
                 lcc_error(line, line_index, "expected closing \"'\".");
             }
+            index = 4;
             switch (st[2]) {
             case 'n':
                 value = '\n';
@@ -69,6 +53,7 @@ Token *make_integer_token(char *st, char *filename, int line, int line_index) {
             if (st[2] != '\'') {
                 lcc_error(line, line_index, "expected closing \"'\".");
             }
+            index = 3;
             value = st[1];
         }
     } else {
@@ -85,19 +70,16 @@ Token *make_integer_token(char *st, char *filename, int line, int line_index) {
 
     }
 
-    result = malloc(sizeof(Token));
+    t->type = token_integer;
+    t->value.integer = value;
+    t->line_number = line;
+    t->line_index = line_index;
+    t->filename = filename;
 
-    result->type = token_integer;
-    result->value.integer = value;
-    result->line_number = line;
-    result->line_index = line_index;
-    result->filename = filename;
-
-    return result;
+    return index;
 }
 
-Token *make_string_token(char *st, char *filename, int line, int line_index) {
-    Token *result;
+int make_string_token(Token *t, char *st, char *filename, int line, int line_index) {
     char *data;
     char *test;
     int length = 0;
@@ -115,7 +97,8 @@ Token *make_string_token(char *st, char *filename, int line, int line_index) {
     }
 
     test = st + 1;
-    while (*test++ != '"');
+    while (*test++ != '"')
+        length += 1;
     /* TODO: factor out escape code handling.
      *
      * while (*test != '"') {
@@ -126,43 +109,82 @@ Token *make_string_token(char *st, char *filename, int line, int line_index) {
         length += 1;
     } */
 
-    data = malloc(length) + 1;
+    data = malloc(length + 1);
     strncpy(data, st + 1, length);
+    data[length] = '\0';
 
-    result = malloc(sizeof(Token));    
+    t->type = token_string;
+    t->value.string = data;
+    t->line_number = line;
+    t->line_index = line_index;
+    t->filename = filename;
 
-    result->type = token_string;
-    result->value.string = data;
-    result->line_number = line;
-    result->line_index = line_index;
-    result->filename = filename;
-
-    return result;
+    return length + 2;
 }
 
-Token *make_name_token(char *st, char *filename, int line, int line_index) {
-    Token *result;
+int make_ident_token(Token *t, char *st, char *filename, int line, int line_index) {
     char *data;
     char *test;
     int length = 0;
 
-    test = st + 1;
-    while (*test++ )
+    test = st;
+    while (
+        (*test >= 'a' && *test <= 'z') ||
+        (*test >= 'A' && *test <= 'Z') ||
+        (*test >= '0' && *test <= '9') ||
+        (*test == '_')) {
+
+        test++;
         length += 1;
+    }
 
-    data = malloc(length);
-    strncpy(data, st + 1, length);
+    data = malloc(length + 1);
+    strncpy(data, st, length);
+    data[length] = '\0';
 
-    result = malloc(sizeof(Token));    
+    t->type = token_ident;
+    t->value.string = data;
+    t->line_number = line;
+    t->line_index = line_index;
+    t->filename = filename;
 
-    result->type = token_string;
-    result->value.string = data;
-    result->line_number = line;
-    result->line_index = line_index;
-    result->filename = filename;
-
-    return result;
+    return length;
 }
+
+int make_op_token(Token *t, char *st, char *filename, int line, int line_index) {
+    int length;
+    int assign = 0;
+
+    /* very TODO: see header for all the ops */
+
+    return 0;
+}
+
+int make_other_token(Token *t, char *st, char *filename, int line, int line_index) {
+    switch (st[0]) {
+    case '{':
+        t->type = token_open_brace;
+        break;
+    case '}':
+        t->type = token_close_brace;
+        break;
+    case '(':
+        t->type = token_open_paren;
+        break;
+    case ')':
+        t->type = token_close_paren;
+        break;
+    default:
+        lcc_error(line, line_index, "No acceptable other token at this location");
+    }
+
+    t->line_number = line;
+    t->line_index = line_index;
+    t->filename = filename;
+    
+    return 1;
+}
+
 void print_token(Token *t) {
     switch (t->type) {
     case token_integer:
@@ -171,20 +193,46 @@ void print_token(Token *t) {
     case token_string:
         printf("String(%s) @ %s:%i:%i", t->value.string, t->filename, t->line_number, t->line_index);
         break;
+    case token_ident:
+        printf("Ident(%s) @ %s:%i:%i", t->value.ident, t->filename, t->line_number, t->line_index);
+        break;
+    case token_open_brace:
+        printf("{");
+        break;
+    case token_close_brace:
+        printf("}");
+        break;
+    case token_open_paren:
+        printf("(");
+        break;
+    case token_close_paren:
+        printf(")");
+        break;
     default:
         lcc_compiler_error("Unknown token type");
     }
 }
 
 int main() {
-    Token *int_test = make_integer_token("1234", "test.c", 1, 0);
-    Token *string_test = make_string_token("\"Hello World\"", "test.c", 2, 0);
-    Token *error_test = make_integer_token("1", "test.c", 1, 1);
+    Token *int_test = malloc(sizeof(Token));
+    Token *int2_test = malloc(sizeof(Token));
+    Token *string_test = malloc(sizeof(Token));
+    Token *ident_test = malloc(sizeof(Token));
+    Token *error_test = malloc(sizeof(Token));
+    printf("%i\n", make_integer_token(int_test, "1234", "test.c", 1, 0));
+    printf("%i\n", make_integer_token(int2_test, "'\\n'", "test.c", 1, 0));
+    printf("%i\n", make_string_token(string_test, "\"Hello World\"", "test.c", 2, 0));
+    printf("%i\n", make_ident_token(ident_test, "Hello", "test.c", 2, 0));
+    printf("%i\n", make_integer_token(error_test, "1", "test.c", 1, 1));
     error_test->type = 100;
 
     print_token(int_test);
     printf("\n");
+    print_token(int2_test);
+    printf("\n");
     print_token(string_test);
+    printf("\n");
+    print_token(ident_test);
     printf("\n");
     print_token(error_test);
     printf("\n");

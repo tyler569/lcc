@@ -10,6 +10,6 @@ all: $(OBJECTS)
 	$(CC) $(OBJECTS) -o lcc
 
 clean:
-	rm lcc *.o
+	rm -f lcc *.o a.out
 
 
