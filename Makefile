@@ -2,7 +2,7 @@
 CC = clang
 CFLAGS = -Wall -std=c90
 
-OBJECTS = lcc.o
+OBJECTS = lcc.o errors.o token.o
 
 .PHONY: all clean
 

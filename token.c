@@ -1,4 +1,5 @@
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -22,9 +23,14 @@ int make_integer_token(Token *t, char *st, char *filename, int line, int line_in
             index = 2;
             break;
         case 'o':
-        default:
             index = 1;
             base = 8;
+            break;
+        default:
+            if (isdigit(st[1])) {
+                index = 1;
+                base = 8;
+            }
         }
     }
 
@@ -62,7 +68,7 @@ int make_integer_token(Token *t, char *st, char *filename, int line, int line_in
             lcc_error(line, line_index, "I don't support non-base 10 yet, sorry");
         }
 
-        while (st[index] >= '0' && st[index] <= '9') {
+        while (isdigit(st[index])) {
             value *= base;
             value += st[index] - '0';
             index += 1;
@@ -128,12 +134,7 @@ int make_ident_token(Token *t, char *st, char *filename, int line, int line_inde
     int length = 0;
 
     test = st;
-    while (
-        (*test >= 'a' && *test <= 'z') ||
-        (*test >= 'A' && *test <= 'Z') ||
-        (*test >= '0' && *test <= '9') ||
-        (*test == '_')) {
-
+    while (isalnum(*test) || (*test == '_')) {
         test++;
         length += 1;
     }
@@ -152,9 +153,6 @@ int make_ident_token(Token *t, char *st, char *filename, int line, int line_inde
 }
 
 int make_op_token(Token *t, char *st, char *filename, int line, int line_index) {
-    int length;
-    int assign = 0;
-
     /* very TODO: see header for all the ops */
 
     return 0;
@@ -185,34 +183,132 @@ int make_other_token(Token *t, char *st, char *filename, int line, int line_inde
     return 1;
 }
 
-void print_token(Token *t) {
+void debug_print_token(Token *t) {
     switch (t->type) {
     case token_integer:
-        printf("Integer(%i) @ %s:%i:%i", t->value.integer, t->filename, t->line_number, t->line_index);
+        printf("[Integer(%i) @ %s:%i:%i]", t->value.integer, t->filename, t->line_number, t->line_index);
         break;
     case token_string:
-        printf("String(%s) @ %s:%i:%i", t->value.string, t->filename, t->line_number, t->line_index);
+        printf("[String(%s) @ %s:%i:%i]", t->value.string, t->filename, t->line_number, t->line_index);
         break;
     case token_ident:
-        printf("Ident(%s) @ %s:%i:%i", t->value.ident, t->filename, t->line_number, t->line_index);
+        printf("[Ident(%s) @ %s:%i:%i]", t->value.ident, t->filename, t->line_number, t->line_index);
         break;
     case token_open_brace:
-        printf("{");
+        printf("[ { ]");
         break;
     case token_close_brace:
-        printf("}");
+        printf("[ } ]");
         break;
     case token_open_paren:
-        printf("(");
+        printf("[ ( ]");
         break;
     case token_close_paren:
-        printf(")");
+        printf("[ ) ]");
         break;
     default:
-        lcc_compiler_error("Unknown token type");
+        printf("[Unknown - this is a bug.]");
+        /*
+         * lcc_compiler_error("Unknown token type");          */
     }
 }
 
+#define IF_OP(op, token) if (strncmp(op, program + index, sizeof(op) - 1) == 0) { \
+    last->v = malloc(sizeof(Token));    \
+    last->v->type = token;              \
+    index += sizeof(op) - 1;            \
+    line_index += sizeof(op) - 1;       \
+}
+    
+
+TokenList *tokenize_string(char *program, char *filename) {
+    int line_number = 1;
+    int line_index = 1;
+    int index;
+    int program_length = strlen(program);
+    int tmp_len;
+    TokenList *head = malloc(sizeof(TokenList));
+    TokenList *last = head;
+
+    for (index = 0; index < program_length; ) {
+        last->v = malloc(sizeof(Token));
+
+        if (program[index] == '\n') {
+            line_number += 1;
+            line_index = 1;
+            index += 1;
+            /* Continue so we don't make an empty token */
+            continue; 
+        } else if (program[index] == ' ') {
+            line_index += 1;
+            index += 1;
+            /* Continue so we don't make an empty token */
+            continue;
+        } else if (program[index] == '\t') {
+            line_index += 4;
+            index += 1;
+            /* Continue so we don't make an empty token */
+            continue;
+        } else if (program[index] == '"') {
+            tmp_len = make_string_token(last->v, program + index, filename, line_number, line_index);
+
+            index += tmp_len;
+            line_index += tmp_len;
+        } else if (program[index] == '\'') {
+            tmp_len = make_integer_token(last->v, program + index, filename, line_number, line_index);
+
+            index += tmp_len;
+            line_index += tmp_len;
+        /*  */
+        } else if (isdigit(program[index])) {
+            tmp_len = make_integer_token(last->v, program + index, filename, line_number, line_index);
+
+            index += tmp_len;
+            line_index += tmp_len;
+        } else if (isalpha(program[index]) || program[index] == '_') {
+            tmp_len = make_ident_token(last->v, program + index, filename, line_number, line_index);
+
+            index += tmp_len;
+            line_index += tmp_len;
+        }
+        
+        /* TODO: unhandled
+         * if starts with # -> do special things or token it?
+         */
+
+        else IF_OP("{", token_open_brace)
+        else IF_OP("}", token_close_brace)
+        else IF_OP("(", token_open_paren)
+        else IF_OP(")", token_close_paren)
+        /* TODO: all the other ops */
+        
+        else {
+            lcc_error(line_number, line_index, "Unrecognized token");
+        }
+
+
+        last->next = malloc(sizeof(TokenList));
+
+        last = last->next;
+
+        last->v = NULL;
+        last->next = NULL;
+    }
+
+    /* TODO: Known issue:
+     * The final token will be empty and shows as invalid
+     * 
+     * this is beause I create the next token and allocate it
+     * at the end of the loop, then it checks and finds it
+     * needs to return, so it stays uninitialized.
+     *
+     * I should probably store a previous pointer that
+     * will allow be to invalidate that pointer (NULL it)
+     */
+
+    return head;
+}
+/*
 int main() {
     Token *int_test = malloc(sizeof(Token));
     Token *int2_test = malloc(sizeof(Token));
@@ -226,14 +322,23 @@ int main() {
     printf("%i\n", make_integer_token(error_test, "1", "test.c", 1, 1));
     error_test->type = 100;
 
-    print_token(int_test);
+    debug_print_token(int_test);
     printf("\n");
-    print_token(int2_test);
+    debug_print_token(int2_test);
     printf("\n");
-    print_token(string_test);
+    debug_print_token(string_test);
     printf("\n");
-    print_token(ident_test);
+    debug_print_token(ident_test);
     printf("\n");
-    print_token(error_test);
+    debug_print_token(error_test);
     printf("\n");
+
+    TokenList *t = tokenize_string("int main \"foo\" 123 '4' '\\n'\nint foo\tbar\n\tfoobar\n\n", "test.c");
+    while (t->v != NULL) {
+        debug_print_token(t->v);
+        printf("\n");
+        t = t->next;
+    }
 }
+*/
+

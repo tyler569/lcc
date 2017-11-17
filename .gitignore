@@ -1,5 +1,5 @@
 
 *.o
-llc
+lcc
 a.out
 

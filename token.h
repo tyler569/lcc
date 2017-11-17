@@ -1,13 +1,15 @@
 
 typedef struct Token {
     enum {
+        token_invalid = 0,
+
         token_integer,
         token_string,
         token_ident,
-        token_open_brace,
-        token_close_brace,
-        token_open_paren,
-        token_close_paren,
+        token_open_brace,   /* {  */
+        token_close_brace,  /* }  */
+        token_open_paren,   /* (  */
+        token_close_paren,  /* )  */
         token_equal,        /* =  */
 
         token_plus,         /* +  */
@@ -67,14 +69,22 @@ typedef struct Token {
     int line_index;
 } Token;
 
+typedef struct TokenList {
+    Token *v;
+    struct TokenList *next;
+} TokenList;
+
+
 /* Functions put the new Token at the provided pointer, which is assumed
  * to be preallocated to sizeof(Token)
  *
  * The number of characters consummed is returned. */
 
+TokenList *tokenize_string(char *program, char *filename);
+
 int make_integer_token(Token *t, char *st, char *fileident, int line, int line_index);
 int make_string_token(Token *t, char *st, char *fileident, int line, int line_index);
 int make_ident_token(Token *t, char *st, char *fileident, int line, int line_index);
 
-void print_token(Token *t);
+void debug_print_token(Token *t);
 
