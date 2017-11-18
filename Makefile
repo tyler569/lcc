@@ -1,15 +1,17 @@
 
 CC = clang
-CFLAGS = -Wall -std=c90
+CFLAGS = -Wall -std=c89
 
-OBJECTS = lcc.o errors.o token.o
+CFILES = lcc.c errors.c token.c
+TARGET = lcc
 
 .PHONY: all clean
 
-all: $(OBJECTS)
-	$(CC) $(OBJECTS) -o lcc
+$(TARGET): $(CFILES)
+	$(CC) $(CFLAGS) -o $(TARGET) $(CFILES)
+
+all: $(TARGET)
 
 clean:
-	rm -f lcc *.o a.out
-
+	rm -f $(OBJECTS) $(TARGET)
 

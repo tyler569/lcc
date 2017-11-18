@@ -5,9 +5,9 @@
 #include "errors.h"
 
 /*
-void print_line_at_error(char *program, int line, int ix) {
-    int index;
-    int count_nl = 1;
+void print_t_line_at_error(char *program, size_t line, size_t ix) {
+    size_t index;
+    size_t count_nl = 1;
 
     for (index = 0; ; index++) {
         if (program[index] = '\0') {
@@ -26,24 +26,24 @@ void print_line_at_error(char *program, int line, int ix) {
 
 }*/
 
-void lcc_warning(int line, int ix, char *message) {
+void lcc_warning(size_t line, size_t ix, char *message) {
     /* Get the file at that location */
 
-    printf("WARNING: %s at %i:%i\n", message, line, ix);
+    printf("file:%lu:%lu: warning: %s\n", line, ix, message);
     return;
 }
 
-void lcc_error(int line, int ix, char *message) {
+void lcc_error(size_t line, size_t ix, char *message) {
     /* Get the file at that location */
 
-    printf("ERROR: %s at %i:%i\n", message, line, ix);
+    printf("file:%lu:%lu: error: %s\n", line, ix, message);
     exit(1);
 }
 
-void lcc_compiler_error_internal(char *file, int line, char *message) {
+void lcc_compiler_error_internal(char *file, size_t line, char *message) {
     /* As above */
 
-    printf("INTERNAL COMPILER ERROR at %s:%i\n", file, line);
+    printf("[ ICE ] at %s:%lu\n", file, line);
     printf("%s\n", message);
     exit(1);
 }

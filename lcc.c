@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
 
     /* Temporary variables: */
     char *buf;
-    int len;
+    size_t len;
     TokenList *tok;
 
     if (argc < 2) {
@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
     srcfile = fopen(argv[1], "r");
     
     if (srcfile == NULL) {
-        lcc_error(0, 0, "Failed to open file");
+        printf("Failed to open file\n");
         exit(1);
     }
 
@@ -49,7 +49,9 @@ int main(int argc, char **argv) {
     fread(buf, 1, len, srcfile);
 
     tok = tokenize_string(buf, argv[1]);
-    while (tok) {
+    
+    printf("\nDebug printing tokens:\n\n");
+    while (tok->next) { /* workaround for uninitialized bug */
         debug_print_token(tok->v);
         printf("\n");
         tok = tok->next;

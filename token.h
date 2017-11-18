@@ -10,6 +10,7 @@ typedef struct Token {
         token_close_brace,  /* }  */
         token_open_paren,   /* (  */
         token_close_paren,  /* )  */
+        token_semicolon,    /* ;  */
         token_equal,        /* =  */
 
         token_plus,         /* +  */
@@ -56,17 +57,17 @@ typedef struct Token {
         token_comma,        /* ,  */
 
         token_question,     /* ?  */
-        token_colon,        /* :  */
+        token_colon         /* :  */
     } type;
     union {
-        int integer;
+        long int integer;
         char *string;
         char *ident;
     } value;
 
     char *filename;
-    int line_number;
-    int line_index;
+    size_t line_number;
+    size_t line_index;
 } Token;
 
 typedef struct TokenList {
@@ -82,9 +83,9 @@ typedef struct TokenList {
 
 TokenList *tokenize_string(char *program, char *filename);
 
-int make_integer_token(Token *t, char *st, char *fileident, int line, int line_index);
-int make_string_token(Token *t, char *st, char *fileident, int line, int line_index);
-int make_ident_token(Token *t, char *st, char *fileident, int line, int line_index);
+size_t make_integer_token(Token *t, char *st, char *fileident, size_t line, size_t line_index);
+size_t make_string_token(Token *t, char *st, char *fileident, size_t line, size_t line_index);
+size_t make_ident_token(Token *t, char *st, char *fileident, size_t line, size_t line_index);
 
 void debug_print_token(Token *t);
 

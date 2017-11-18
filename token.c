@@ -7,10 +7,12 @@
 #include "errors.h"
 #include "token.h"
 
-int make_integer_token(Token *t, char *st, char *filename, int line, int line_index) {
+size_t make_integer_token(Token *t, char *st, char *filename, size_t line, size_t line_index) {
     int base = 10;
-    int index = 0;
-    int value = 0;
+    size_t index = 0;
+
+    /* @Bug : doesn't support or handle large integers */
+    long int value = 0;
 
     if (st[0] == '0') {
         switch (st[1]) {
@@ -64,6 +66,8 @@ int make_integer_token(Token *t, char *st, char *filename, int line, int line_in
         }
     } else {
 
+        /* TODO: strtol instead of this garbage */
+
         if (base != 10) {
             lcc_error(line, line_index, "I don't support non-base 10 yet, sorry");
         }
@@ -82,13 +86,13 @@ int make_integer_token(Token *t, char *st, char *filename, int line, int line_in
     t->line_index = line_index;
     t->filename = filename;
 
-    return index;
+    return index; /* TODO: fix this when I move to strtol */
 }
 
-int make_string_token(Token *t, char *st, char *filename, int line, int line_index) {
+size_t make_string_token(Token *t, char *st, char *filename, size_t line, size_t line_index) {
     char *data;
     char *test;
-    int length = 0;
+    size_t length = 0;
 
     /* For now, when creating a string token I require the whole thing (or more) to be
      * passed in -- including quotation marks.
@@ -128,10 +132,10 @@ int make_string_token(Token *t, char *st, char *filename, int line, int line_ind
     return length + 2;
 }
 
-int make_ident_token(Token *t, char *st, char *filename, int line, int line_index) {
+size_t make_ident_token(Token *t, char *st, char *filename, size_t line, size_t line_index) {
     char *data;
     char *test;
-    int length = 0;
+    size_t length = 0;
 
     test = st;
     while (isalnum(*test) || (*test == '_')) {
@@ -152,13 +156,14 @@ int make_ident_token(Token *t, char *st, char *filename, int line, int line_inde
     return length;
 }
 
-int make_op_token(Token *t, char *st, char *filename, int line, int line_index) {
-    /* very TODO: see header for all the ops */
+/* @Cleanup probably remove in favor of IF_OP below */
+
+/*size_t make_op_token(Token *t, char *st, char *filename, size_t line, size_t line_index) {
 
     return 0;
 }
 
-int make_other_token(Token *t, char *st, char *filename, int line, int line_index) {
+size_t make_other_token(Token *t, char *st, char *filename, size_t line, size_t line_index) {
     switch (st[0]) {
     case '{':
         t->type = token_open_brace;
@@ -182,17 +187,20 @@ int make_other_token(Token *t, char *st, char *filename, int line, int line_inde
     
     return 1;
 }
+*/
 
 void debug_print_token(Token *t) {
     switch (t->type) {
+    case token_invalid:
+        printf("[Null token - probably uninitialized]");
     case token_integer:
-        printf("[Integer(%i) @ %s:%i:%i]", t->value.integer, t->filename, t->line_number, t->line_index);
+        printf("[Integer(%lu) @ %s:%lu:%lu]", t->value.integer, t->filename, t->line_number, t->line_index);
         break;
     case token_string:
-        printf("[String(%s) @ %s:%i:%i]", t->value.string, t->filename, t->line_number, t->line_index);
+        printf("[String(%s) @ %s:%lu:%lu]", t->value.string, t->filename, t->line_number, t->line_index);
         break;
     case token_ident:
-        printf("[Ident(%s) @ %s:%i:%i]", t->value.ident, t->filename, t->line_number, t->line_index);
+        printf("[Ident(%s) @ %s:%lu:%lu]", t->value.ident, t->filename, t->line_number, t->line_index);
         break;
     case token_open_brace:
         printf("[ { ]");
@@ -205,6 +213,9 @@ void debug_print_token(Token *t) {
         break;
     case token_close_paren:
         printf("[ ) ]");
+        break;
+    case token_semicolon:
+        printf("[ ; ]");
         break;
     default:
         printf("[Unknown - this is a bug.]");
@@ -222,11 +233,11 @@ void debug_print_token(Token *t) {
     
 
 TokenList *tokenize_string(char *program, char *filename) {
-    int line_number = 1;
-    int line_index = 1;
-    int index;
-    int program_length = strlen(program);
-    int tmp_len;
+    size_t line_number = 1;
+    size_t line_index = 1;
+    size_t index;
+    size_t program_length = strlen(program);
+    size_t tmp_len;
     TokenList *head = malloc(sizeof(TokenList));
     TokenList *last = head;
 
@@ -263,6 +274,8 @@ TokenList *tokenize_string(char *program, char *filename) {
         } else if (isdigit(program[index])) {
             tmp_len = make_integer_token(last->v, program + index, filename, line_number, line_index);
 
+            lcc_warning(line_number, line_index, "Numbers are a warning");
+
             index += tmp_len;
             line_index += tmp_len;
         } else if (isalpha(program[index]) || program[index] == '_') {
@@ -280,6 +293,7 @@ TokenList *tokenize_string(char *program, char *filename) {
         else IF_OP("}", token_close_brace)
         else IF_OP("(", token_open_paren)
         else IF_OP(")", token_close_paren)
+        else IF_OP(";", token_semicolon)
         /* TODO: all the other ops */
         
         else {
