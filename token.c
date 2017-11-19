@@ -7,6 +7,70 @@
 #include "errors.h"
 #include "token.h"
 
+typedef struct TokenStr {
+    TokenType t;
+    char *name;
+} TokenStr;
+
+void debug_print_token(Token *);
+
+/* @Note:
+ * These are iterated through in order, and therefore
+ * any shorter matches must be after longer ones to
+ * prevent ambiguities.
+ * i.e.:
+ * += matching token_plus, token_equal, instead
+ * of token_plus_equal.
+ */
+TokenStr literal_token_names[] = {
+    {token_bit_left_equal, "<<="},
+    {token_bit_right_equal, ">>="},
+    {token_plus_plus, "++"},
+    {token_minus_minus, "--"},
+    {token_bit_left, "<<"},
+    {token_bit_right, ">>"},
+    {token_logic_and, "&&"},
+    {token_logic_or, "||"},
+    {token_double_equal, "=="},
+    {token_not_equal, "!="},
+    {token_less_equal, "<="},
+    {token_greater_equal, ">="},
+    {token_plus_equal, "+="},
+    {token_minus_equal, "-="},
+    {token_star_equal, "*="},
+    {token_slash_equal, "/="},
+    {token_percent_equal, "%="},
+    {token_and_equal, "&="},
+    {token_or_equal, "|="},
+    {token_xor_equal, "^="},
+    {token_access, "->"},
+    {token_open_brace, "{"},
+    {token_close_brace, "}"},
+    {token_open_paren, "("},
+    {token_close_paren, ")"},
+    {token_open_bracket, "["},
+    {token_close_bracket, "]"},
+    {token_semicolon, ";"},
+    {token_equal, "="},
+    {token_plus, "+"},
+    {token_minus, "-"},
+    {token_star, "*"},
+    {token_slash, "/"},
+    {token_mod, "%"},
+    {token_and, "&"},
+    {token_or, "|"},
+    {token_xor, "^"},
+    {token_not, "!"},
+    {token_tilde, "~"},
+    {token_less, "<"},
+    {token_greater, ">"},
+    {token_dot, "."},
+    {token_comma, ","},
+    {token_question, "?"},
+    {token_colon, ":"},
+    {token_hash, "#"}
+};
+
 size_t make_integer_token(Token *t, char *st, char *filename, size_t line, size_t line_index) {
     int base = 10;
     size_t index = 0;
@@ -86,7 +150,7 @@ size_t make_integer_token(Token *t, char *st, char *filename, size_t line, size_
     t->line_index = line_index;
     t->filename = filename;
 
-    return index; /* TODO: fix this when I move to strtol */
+    return index;
 }
 
 size_t make_string_token(Token *t, char *st, char *filename, size_t line, size_t line_index) {
@@ -156,38 +220,32 @@ size_t make_ident_token(Token *t, char *st, char *filename, size_t line, size_t 
     return length;
 }
 
-/* @Cleanup probably remove in favor of IF_OP below */
-
-/*size_t make_op_token(Token *t, char *st, char *filename, size_t line, size_t line_index) {
-
-    return 0;
-}
-
 size_t make_other_token(Token *t, char *st, char *filename, size_t line, size_t line_index) {
-    switch (st[0]) {
-    case '{':
-        t->type = token_open_brace;
-        break;
-    case '}':
-        t->type = token_close_brace;
-        break;
-    case '(':
-        t->type = token_open_paren;
-        break;
-    case ')':
-        t->type = token_close_paren;
-        break;
-    default:
-        lcc_error(line, line_index, "No acceptable other token at this location");
+    int i;
+    int max = strlen(st);
+    int cur_len;
+    t->type = token_invalid;
+    
+    for (i=0; i<sizeof(literal_token_names) / sizeof(TokenStr); i++) {
+        cur_len = strlen(literal_token_names[i].name);
+        if (cur_len > max) {
+            continue;
+        }
+        if (strncmp(literal_token_names[i].name, st, cur_len) == 0) {
+            t->type = literal_token_names[i].t;
+        }
+    }
+
+    if (t->type == token_invalid) {
+        return 0;
     }
 
     t->line_number = line;
     t->line_index = line_index;
     t->filename = filename;
     
-    return 1;
+    return cur_len;
 }
-*/
 
 void debug_print_token(Token *t) {
     switch (t->type) {
@@ -202,22 +260,13 @@ void debug_print_token(Token *t) {
     case token_ident:
         printf("[Ident(%s) @ %s:%lu:%lu]", t->value.ident, t->filename, t->line_number, t->line_index);
         break;
-    case token_open_brace:
-        printf("[ { ]");
-        break;
-    case token_close_brace:
-        printf("[ } ]");
-        break;
-    case token_open_paren:
-        printf("[ ( ]");
-        break;
-    case token_close_paren:
-        printf("[ ) ]");
-        break;
-    case token_semicolon:
-        printf("[ ; ]");
-        break;
     default:
+        for (int i=0; i<sizeof(literal_token_names) / sizeof(TokenStr); i++) {
+            if (t->type == literal_token_names[i].t) {
+                printf("[ op: %s ]", literal_token_names[i].name);
+                return;
+            }
+        }
         printf("[Unknown - this is a bug.]");
         /*
          * lcc_compiler_error("Unknown token type");          */
@@ -243,6 +292,13 @@ TokenList *tokenize_string(char *program, char *filename) {
 
     for (index = 0; index < program_length; ) {
         last->v = malloc(sizeof(Token));
+
+        if (program[index] == '/' && program[index + 1] == '*') {
+            /* Drop for comments */
+            while (!(program[index] == '*' && program[index + 1] == '/'))
+                index += 1;
+            index += 2;
+        }
 
         if (program[index] == '\n') {
             line_number += 1;
@@ -274,30 +330,34 @@ TokenList *tokenize_string(char *program, char *filename) {
         } else if (isdigit(program[index])) {
             tmp_len = make_integer_token(last->v, program + index, filename, line_number, line_index);
 
-            lcc_warning(line_number, line_index, "Numbers are a warning");
+            lcc_warning(line_number, line_index, "Numbers are a warning for testing");
 
             index += tmp_len;
             line_index += tmp_len;
         } else if (isalpha(program[index]) || program[index] == '_') {
-            tmp_len = make_ident_token(last->v, program + index, filename, line_number, line_index);
+            /* see if it's a keyword first, otherwise it's an ident */
+            /* @Speedup: only check tokens that start with alpha | '_' here */
+            tmp_len = make_other_token(last->v, program + index, filename, line_number, line_index);
+
+            if (tmp_len == 0) {
+                tmp_len = make_ident_token(last->v, program + index, filename, line_number, line_index);
+            }
 
             index += tmp_len;
             line_index += tmp_len;
-        }
-        
-        /* TODO: unhandled
-         * if starts with # -> do special things or token it?
-         */
+        } else {
+            tmp_len = make_other_token(last->v, program + index, filename, line_number, line_index);
+            /* Debugging token length
+            debug_print_token(last->v);
+            printf("\ntmp_len: %zu\n\n", tmp_len);
+            */
 
-        else IF_OP("{", token_open_brace)
-        else IF_OP("}", token_close_brace)
-        else IF_OP("(", token_open_paren)
-        else IF_OP(")", token_close_paren)
-        else IF_OP(";", token_semicolon)
-        /* TODO: all the other ops */
-        
-        else {
-            lcc_error(line_number, line_index, "Unrecognized token");
+            if (tmp_len == 0) {
+                lcc_error(line_number, line_index, "Unrecognized token");
+            }
+
+            index += tmp_len;
+            line_index += tmp_len;
         }
 
 
@@ -309,7 +369,7 @@ TokenList *tokenize_string(char *program, char *filename) {
         last->next = NULL;
     }
 
-    /* TODO: Known issue:
+    /* TODO: @Bug:
      * The final token will be empty and shows as invalid
      * 
      * this is beause I create the next token and allocate it

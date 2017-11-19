@@ -1,4 +1,7 @@
 
+#ifndef AST_H
+#define AST_H
+
 #include <stdlib.h>
 
 typedef struct AstExp {
@@ -94,15 +97,21 @@ typedef struct AstExp {
      * resolution in the scope resolution pass
      * and thereafter.
      *
-     * It will be a hash of the name and scope
-     * of an object, and will uniquely identify
-     * it, as soon as it is established.
+     * It will uniquely identify each object
+     * as soon as it is established.  Potentially
+     * just by incrementing for every new reference.
+     *
+     * 0 will be special and mean unknown/unresolved.
+     *
+     * Always initialize this to 0 to prevent bad
+     * data from sneaking in.
      */
 } AstExp;
 
 AstExp *make_integer_node(long int value);
 AstExp *make_ident_node(char *name);
 AstExp *make_type_node(char *name);
-AstExp *make_pointer_type_node();
+AstExp *make_pointer_type_node(AstExp *to);
 
+#endif
 
