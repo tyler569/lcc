@@ -1,13 +1,14 @@
 
 #include <stdlib.h>
 
-#include "errors.h"
-#include "typer.h"
-#include "token.h"
 #include "ast.h"
+#include "errors.h"
+#include "token.h"
+#include "typer.h"
 
-AstExp *make_integer_node(long int value) {
-    AstExp *result = malloc(sizeof(AstExp));
+AstExp* make_integer_node(long int value)
+{
+    AstExp* result = malloc(sizeof(AstExp));
     result->id = 0;
 
     result->type = ast_integer;
@@ -16,8 +17,9 @@ AstExp *make_integer_node(long int value) {
     return result;
 }
 
-AstExp *make_ident_node(char *name) {
-    AstExp *result = malloc(sizeof(AstExp));
+AstExp* make_ident_node(char* name)
+{
+    AstExp* result = malloc(sizeof(AstExp));
     result->id = 0;
 
     result->type = ast_ident;
@@ -26,8 +28,9 @@ AstExp *make_ident_node(char *name) {
     return result;
 }
 
-AstExp *make_type_node(char *name) {
-    AstExp *result = malloc(sizeof(AstExp));
+AstExp* make_type_node(char* name)
+{
+    AstExp* result = malloc(sizeof(AstExp));
     result->id = 0;
 
     result->type = ast_type;
@@ -36,8 +39,9 @@ AstExp *make_type_node(char *name) {
     return result;
 }
 
-AstExp *make_pointer_type_node(AstExp *to) {
-    AstExp *result = malloc(sizeof(AstExp));
+AstExp* make_pointer_type_node(AstExp* to)
+{
+    AstExp* result = malloc(sizeof(AstExp));
     result->id = 0;
 
     result->type = ast_pointer_type;
@@ -46,8 +50,9 @@ AstExp *make_pointer_type_node(AstExp *to) {
     return result;
 }
 
-AstExp *make_function_type_node(AstExp *ret, AstExp *params) {
-    AstExp *result = malloc(sizeof(AstExp));
+AstExp* make_function_type_node(AstExp* ret, AstExp* params)
+{
+    AstExp* result = malloc(sizeof(AstExp));
     result->id = 0;
 
     result->type = ast_pointer_type;
@@ -57,8 +62,9 @@ AstExp *make_function_type_node(AstExp *ret, AstExp *params) {
     return result;
 }
 
-AstExp *make_declaration_node(AstExp *type, AstExp *ident, AstExp *value) {
-    AstExp *result = malloc(sizeof(AstExp));
+AstExp* make_declaration_node(AstExp* type, AstExp* ident, AstExp* value)
+{
+    AstExp* result = malloc(sizeof(AstExp));
     result->id = 0;
 
     result->type = ast_pointer_type;
@@ -69,47 +75,30 @@ AstExp *make_declaration_node(AstExp *type, AstExp *ident, AstExp *value) {
     return result;
 }
 
+AstExp* make_ast_from_tokens(TokenList* t) { return NULL; }
 
-AstExp *make_ast_from_tokens(TokenList *t) {
-    AstExp *result = malloc(sizeof(AstExp));
-
-    result->id = 0;
-    result->type = ast_block;
-    
-    /* parse one expression */
-
-    switch (t->v->type) {
-    case token_ident:
-        if (!ident_is_type(t->v->value.ident)) {
-            /* scope resolution eventually */
-            lcc_error(t->v->line_number, t->v->line_index, "Unknown idetifier");
-        }
-        /* it's a declaration */
-        /* resolve multiword type
-         *   (unsigned char, struct foobar)
-         */
-
-        /* @Bug: pointer resolution goes here */
-        if (t->next->v->type != token_ident) {
-            lcc_error(t->v->line_number, t->v->line_index, "Only identifiers can be declared");
-        }
-
-        if (t->next->next->v->type == token_open_paren) {
-            /* We're a function, yippie */
-            /* TODO: arguments */
-            AstExp *ret_type = make_type_node(t->v->value.ident);
-            AstExp *params = NULL;
-            AstExp *block = NULL;
-            AstExp *fn_type = make_function_type_node(ret_type, params);
-        }
-
-
-    default:
-        lcc_error(t->v->line_number, t->v->line_index, "Invalid token");
-    }
-
-    /* recurse at a later point in token stream */
-    /* Can I do this with a while? I think probably.*/
-
-    return result;
-}
+/* So let's think about this garbage.
+ *
+ * I need a way to compartmentalize this into something sane.
+ *
+ * I'm thinking lots of subfunctions that are looking to parse
+ * individual specific things given a token stream, similar
+ * to the way I programmed the tokenizer for this compiler.
+ *
+ * As example:
+ *  Have some function to match a series of token types
+ *   bool token_pattern_match(TokenList *, <something>)
+ *  This allows me to ask questions like
+ *   "Do we have a type, then a name, then a paren?"
+ *   "Do we have a type, then a name, then an =?"
+ *   "Do we have a type, then a name, then a ;"
+ *  and pass those cases to different parse_* subfns.
+ *
+ * There is other infrastructure for this required as well.
+ * I will need to be able to resolve what is a type, and
+ * be able to combine multiword types in a sane way.
+ *
+ * This is all trivially easy for starters since I only
+ * support 'int' for the moment, but going forward it
+ * will need to be done in some way.
+ */

@@ -26,25 +26,27 @@ void print_t_line_at_error(char *program, size_t line, size_t ix) {
 
 }*/
 
-void lcc_warning(size_t line, size_t ix, char *message) {
+void lcc_warning(size_t line, size_t ix, char* message)
+{
     /* Get the file at that location */
 
     printf("file:%lu:%lu: warning: %s\n", line, ix, message);
     return;
 }
 
-void lcc_error(size_t line, size_t ix, char *message) {
+void lcc_error(size_t line, size_t ix, char* message)
+{
     /* Get the file at that location */
 
     printf("file:%lu:%lu: error: %s\n", line, ix, message);
     exit(1);
 }
 
-void lcc_compiler_error_internal(char *file, size_t line, char *message) {
+void lcc_compiler_error_internal(char* file, size_t line, char* message)
+{
     /* As above */
 
     printf("[ ICE ] at %s:%lu\n", file, line);
     printf("%s\n", message);
     exit(1);
 }
-

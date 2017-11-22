@@ -27,17 +27,17 @@ typedef struct AstExp {
     union {
         long int integer;
         struct {
-            char *name;
+            char* name;
         } ident;
         struct {
-            char *name;
+            char* name;
         } type;
         struct {
-            struct AstExp *to;
+            struct AstExp* to;
         } pointer_type;
         struct {
-            struct AstExp *return_type;
-            struct AstExp *parameters;
+            struct AstExp* return_type;
+            struct AstExp* parameters;
             /* See note in ast_block for parameter handling */
             /* functions are represented as:
              * declaration
@@ -49,17 +49,17 @@ typedef struct AstExp {
              */
         } function_type;
         struct {
-            struct AstExp *type;
-            struct AstExp *ident;
-            struct AstExp *value;
+            struct AstExp* type;
+            struct AstExp* ident;
+            struct AstExp* value;
         } declaration;
         struct {
-            struct AstExp *ident;
-            struct AstExp *value;
+            struct AstExp* ident;
+            struct AstExp* value;
         } assignment;
         struct {
-            struct AstExp *expression;
-            struct AstExp *rest;
+            struct AstExp* expression;
+            struct AstExp* rest;
             /* For now:
              *
              * Blocks will be represented as a linked list of
@@ -77,9 +77,9 @@ typedef struct AstExp {
              * and I should only need to traverse the tree downwards,
              * so I don't expect any adverse effects.
              */
-            
+
             /* For now:
-             * 
+             *
              * Let's try using block for function argument lists
              * and manually restricting to declarations.  If this
              * becomes unweildy, I will add another type or make
@@ -90,7 +90,7 @@ typedef struct AstExp {
 
     size_t line_number;
     size_t line_index;
-    char *filename;
+    char* filename;
 
     int id;
     /* id will be used for type and identifier
@@ -108,10 +108,9 @@ typedef struct AstExp {
      */
 } AstExp;
 
-AstExp *make_integer_node(long int value);
-AstExp *make_ident_node(char *name);
-AstExp *make_type_node(char *name);
-AstExp *make_pointer_type_node(AstExp *to);
+AstExp* make_integer_node(long int value);
+AstExp* make_ident_node(char* name);
+AstExp* make_type_node(char* name);
+AstExp* make_pointer_type_node(AstExp* to);
 
 #endif
-
