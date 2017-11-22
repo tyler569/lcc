@@ -7,8 +7,8 @@ ADDITIONAL_FLAGS = ""
 CFLAGS += -O$(OPT)
 CFLAGS += $(ADDITIONAL_FLAGS)
 
-CFILES = lcc.c errors.c token.c typer.c ast.c vector.c
-CHEADERS = errors.h token.h typer.h ast.h vector.h
+CFILES = lcc.c errors.c token.c ast.c vector.c
+CHEADERS = errors.h token.h ast.h vector.h
 TARGET = lcc
 MAKEFILE = ./Makefile
 
