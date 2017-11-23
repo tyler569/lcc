@@ -75,7 +75,7 @@ AstExp* make_declaration_node(AstExp* type, AstExp* ident, AstExp* value)
     return result;
 }
 
-AstExp* make_ast_from_tokens(TokenList* t) { return NULL; }
+// AstExp* make_ast_from_tokens(TokenList* t) { return NULL; }
 
 /* So let's think about this garbage.
  *

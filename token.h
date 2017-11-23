@@ -4,6 +4,9 @@
 
 #include <stdbool.h>
 
+#include "vector.h"
+#include "loc.h"
+
 typedef enum TokenType {
     token_invalid = 0,
 
@@ -96,29 +99,26 @@ typedef struct Token {
         char* ident;
     } value;
 
-    char* filename;
-    size_t line_number;
-    size_t line_index;
+    Location loc;
 } Token;
 
+/*
 typedef struct TokenList {
     Token* v;
     struct TokenList* next;
 } TokenList;
+*/
 
 /* Functions put the new Token at the provided pointer, which is assumed
  * to be preallocated to sizeof(Token)
  *
  * The number of characters consummed is returned. */
 
-TokenList* tokenize_string(char* program, char* filename);
+Vector* tokenize_string(char* program, char* filename);
 
-size_t make_integer_token(Token* t, char* st, char* fileident, size_t line,
-    size_t line_index);
-size_t make_string_token(Token* t, char* st, char* fileident, size_t line,
-    size_t line_index);
-size_t make_ident_token(Token* t, char* st, char* fileident, size_t line,
-    size_t line_index);
+size_t make_integer_token(Token* t, char* st, Location loc);
+size_t make_string_token(Token* t, char* st, Location loc);
+size_t make_ident_token(Token* t, char* st, Location loc);
 
 void debug_print_token(Token* t);
 

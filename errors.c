@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "loc.h"
 #include "errors.h"
 
 /*
@@ -26,19 +27,19 @@ void print_t_line_at_error(char *program, size_t line, size_t ix) {
 
 }*/
 
-void lcc_warning(size_t line, size_t ix, char* message)
+void lcc_warning(Location loc, char* message)
 {
     /* Get the file at that location */
 
-    printf("file:%lu:%lu: warning: %s\n", line, ix, message);
+    printf("%s:%lu:%lu: warning: %s\n", loc.filename, loc.line, loc.index, message);
     return;
 }
 
-void lcc_error(size_t line, size_t ix, char* message)
+void lcc_error(Location loc, char* message)
 {
     /* Get the file at that location */
 
-    printf("file:%lu:%lu: error: %s\n", line, ix, message);
+    printf("%s:%lu:%lu: error: %s\n", loc.filename, loc.line, loc.index, message);
     exit(1);
 }
 

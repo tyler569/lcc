@@ -5,6 +5,7 @@
 
 #include "errors.h"
 #include "token.h"
+#include "vector.h"
 
 int main(int argc, char** argv)
 {
@@ -15,7 +16,7 @@ int main(int argc, char** argv)
     /* Temporary variables: */
     char* buf;
     size_t len;
-    TokenList* tok;
+    Vector *tokens;
 
     if (argc < 2) {
         printf("No options specified: exitting\n");
@@ -46,17 +47,16 @@ int main(int argc, char** argv)
     rewind(srcfile);
 
     buf = malloc(len + 1);
-    buf[len] = '\0';
+    buf[len] = 0;
 
     fread(buf, 1, len, srcfile);
 
-    tok = tokenize_string(buf, argv[1]);
+    tokens = tokenize_string(buf, argv[1]);
 
     printf("\nDebug printing tokens:\n\n");
-    while (tok->next) { /* workaround for uninitialized bug */
-        debug_print_token(tok->v);
+    for (i=0; i<tokens->len; i++) {
+        debug_print_token(vec_get(tokens, i));
         printf("\n");
-        tok = tok->next;
     }
 
     return 0;
