@@ -1,8 +1,0 @@
-
-foo :: struct {
-    f : int
-}
-
-main :: () {
-    return 0
-}
